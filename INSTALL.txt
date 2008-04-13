@@ -96,7 +96,8 @@ For now, here is exactly what I did to install - my tested configurations are li
 #
 
     cd ..
-    cd nsperl2 # get from svn http://svn.pumptheory.com/repos/aolserver/nsperl2
+    svn co http://svn.pumptheory.com/repos/trunk/aolserver/nsperl2
+    cd nsperl2
     make install
     make test
 

@@ -1,0 +1,45 @@
+Introduction
+------------
+
+nsperl2 is an AOLServer module which bridges, in both directions, between tcl and Perl.
+
+With it you can:
+  * call perl functions from tcl (via the perl::call tcl function)
+  * call tcl functions from perl (via a number of methods - see Documentation below)
+  * register perl functions to handle aolserver requests (via Ns::register_url)
+
+Downloading
+-----------
+
+See INSTALL.txt for the versions of perl, tcl and aolserver you will need.
+
+The latest version of nsperl2 is always avalible via subversion. See Links below.
+
+Installation
+------------
+
+As you can imagine, it is not a walk in the park to correctly link tcl, aolserver and perl.
+While there will be many ways of making it all work, you are best off following the step by
+step instructions in INSTALL.txt at least at first. It details the versions and options
+of each part.
+
+Once the tcl, aolserver and perl pre-requisites are installed, the nsperl2
+Makefile builds the api modules and links everything together for you.
+
+A set of tests is also included, although they do not yet cover every documented method.
+
+Documentation
+-------------
+
+Documentation can be found in the perl modules' pod. The test cases are also useful
+documentation.
+
+You can browse the pod of the latest svn trunk versions online.
+
+Links
+-----
+
+Browse subversion repository: http://svn.pumptheory.com/trac/main/browser/trunk/aolserver/nsperl2
+Svn repository url: http://svn.pumptheory.com/repos/trunk/aolserver/nsperl2
+
+POD documentation: http://svn.pumptheory.com/cgi-bin/pod2html.cgi?class=Ns
