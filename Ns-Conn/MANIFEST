@@ -1,0 +1,9 @@
+Changes
+MANIFEST
+Makefile.PL
+Conn.xs
+ppport.h
+README
+t/Ns-Conn.t
+lib/Ns/Conn.pm
+lib/Ns/Conn/TieStdout.pm

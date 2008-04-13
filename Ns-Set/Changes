@@ -1,0 +1,6 @@
+Revision history for Perl extension Ns::Set.
+
+0.01  Wed Mar 26 00:11:42 2008
+	- original version; created by h2xs 1.23 with options
+		-xA -M '^Ns_Set' -c -p Ns_Set -n Ns::Set munged_ns.h
+

@@ -1,0 +1,48 @@
+TYPEMAP
+Ns_DString * T_NS_DSTRING
+nsperl2_Ns_Set  * T_NSPERL2_SET
+nsperl2_TclCodeObj * T_NSPERL2_CODE
+nsperl2_TclApi * T_NSPERL2_API
+
+INPUT
+T_NS_DSTRING
+    if (sv_derived_from($arg, \"Ns::DString\")) {
+       IV tmp = SvIV((SV*)SvRV($arg));
+       $var = INT2PTR($type, tmp);
+    } else
+      croak(\"$var is not of type Ns::DString\")
+
+T_NSPERL2_SET
+    if (sv_derived_from($arg, \"Ns::Set\")) {
+       IV tmp = SvIV((SV*)SvRV($arg));
+       $var = INT2PTR($type, tmp);
+    } else
+      croak(\"$var is not of type Ns::Set\")
+
+T_NSPERL2_CODE
+    if (sv_derived_from($arg, \"Ns::nsperl2_TclCodeObj\")) {
+       IV tmp = SvIV((SV*)SvRV($arg));
+       $var = INT2PTR($type, tmp);
+    } else
+      croak(\"$var is not of type Ns::nsperl2_TclCodeObj\")
+
+T_NSPERL2_API
+    if (sv_derived_from($arg, \"Ns::TclApi\")) {
+       IV tmp = SvIV((SV*)SvRV($arg));
+       $var = INT2PTR($type, tmp);
+    } else
+      croak(\"$var is not of type Ns::TclApi\")
+
+
+OUTPUT
+T_NS_DSTRING
+    sv_setref_pv($arg, \"Ns::DString\",(void*)$var);
+
+T_NSPERL2_SET
+    sv_setref_pv($arg, \"Ns::Set\",(void*)$var);
+
+T_NSPERL2_CODE
+    sv_setref_pv($arg, \"Ns::nsperl2_TclCodeObj\",(void*)$var);
+
+T_NSPERL2_API
+    sv_setref_pv($arg, \"Ns::TclApi\",(void*)$var);

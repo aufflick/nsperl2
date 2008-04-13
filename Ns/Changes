@@ -1,0 +1,6 @@
+Revision history for Perl extension Ns.
+
+0.01  Mon Mar 24 19:27:13 2008
+	- original version; created by h2xs 1.23 with options
+		-A -n Ns
+

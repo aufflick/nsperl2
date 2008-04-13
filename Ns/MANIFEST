@@ -1,0 +1,8 @@
+Changes
+Makefile.PL
+MANIFEST
+Ns.xs
+ppport.h
+README
+t/Ns.t
+lib/Ns.pm

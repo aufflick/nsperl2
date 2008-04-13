@@ -1,0 +1,6 @@
+Revision history for Perl extension Ns::TclApi.
+
+0.01  Wed Mar 26 20:52:55 2008
+	- original version; created by h2xs 1.23 with options
+		-A -n Ns::TclApi
+

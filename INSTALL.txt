@@ -1,0 +1,142 @@
+I am not entirely sure yet what are the minimum supported versions of Tcl/Aolserver etc., and what
+flexibility you have with perl compilation options (although perl 5.10 is almost definately required).
+
+For now, here is exactly what I did to install - my tested configurations are listed below
+
+#
+# Setup install directory & env variables
+#
+# I put tcl and aolserver in the same root, but you
+# probably don't need to.
+#
+# I always run the test suites - some people skip them.
+#
+# be careful of any existing LIBS, CINCLUDES  etc. env variables - I had them set for
+# MacPorts and it caused problems getting aolserver to link to my new tcl
+#
+
+
+    export NSSRC=~/aol/aolserver-4.5.0    # aolserver src tree (need to get to nsd.h)
+    export NSINST=/opt/aolserver-test     # where aolserver is going to be installed
+    export TCLINST=/opt/aolserver-test    # where tcl is going to be installed
+    export NSPERLINST=/opt/aolserver-perl # where perl & modules are going to be installed
+    export NSPERL=$NSPERLINST/bin/perl     # path to the perl binary
+
+    sudo mkdir $NSINST
+    sudo mkdir $TCLINST
+    sudo mkdir $NSPERLINST
+    sudo chown aufflick $NSINST $TCLINST $NSPERLINST # use the appropriate user here
+
+#
+# Install tcl
+#
+# you may be able to use a suitable existing installation
+# note the corefoundation caveat for Mac installs below
+#
+
+    tar zxf tcl8.4.18-src.tar.gz
+    cd tcl8.4.18/unix
+
+# for Mac OS X:
+# (the disable-corefoundation is required otherwise any forks in perl code will be unsafe)
+    ./configure --enable-threads --disable-corefoundation --prefix=$TCLINST
+
+# for Centos 4.5 (Linux): [Note 1]
+    cat configure | | sed 's/-lieee//' > configure.noieee
+    sh configure.noieee --enable-threads --prefix=$TCLINST
+
+    make
+    make test      # I get an odd clock failure on both platforms [Note 2]
+    make install
+    cd ../..
+
+#
+# Install Aolserver
+#
+
+    tar zxf aolserver-4.5.0-src.tar.gz
+    cd aolserver-4.5.0
+
+    $TCLINST/bin/tclsh8.4 nsconfig.tcl -install $NSINST
+
+# For MacOS:
+    make install
+
+# For Centos 4.5 (Linux): [Note 3]
+    CFLAGS=-nostartfiles make install
+
+    cd ..
+
+#
+# Install perl
+#
+
+    tar zxf perl-5.10.0.tar.gz
+    cd perl-5.10.0
+
+# omit the -d on the end if you want interactive configuration prompts instead of defaults
+
+    sh Configure -Dprefix=$NSPERLINST -Dusethreads -Dusemultiplicity -d
+
+    make
+    make test     # these tests take a long time
+    make install
+
+#
+# Install perl module required for nsperl2 tests
+#
+# the CPAN shell will ask you all sorts of questions - mostly the defaults are fine.
+# it won't ask you again if you install more modules later.
+#
+
+   $NSPERL -MCPAN -e'install "LWP"'
+
+#
+# Install nsperl2
+#
+
+    cd ..
+    cd nsperl2 # get from svn http://svn.pumptheory.com/repos/aolserver/nsperl2
+    make install
+    make test
+
+# note that 'make test' starts an nsd server on port 
+
+
+Tested Configurations
+---------------------
+
+O/S                            Tcl     Perl  Aolserver                 gcc
+------------------------------ ------- ----- ------------------------- -------------------------------
+Mac OS X 10.5 (PPC)            8.4.18  5.10  cvs (HEAD at 2008-03-22)  powerpc-apple-darwin9-gcc-4.0.1
+CentOS 4.5 (Intel 32 bit SMP)  8.4.18  5.10  4.5.0                     3.4.6 20060404 (Red Hat 3.4.6-9)
+
+
+Notes
+-----
+
+1. Tcl always compiles against libieee on Linux. This is not needed with newish glibc
+   and causes a link error when nsperl2 links perl with tcl. On Linux (and perhaps other platforms)
+   you must currently remove -lieee from configure so it doesn't get into the Makefile or the tclConfig.sh
+
+   Someone from RedHat seems to agree -lieee is unnecessary:
+     http://rpmfind.net/linux/RPM/redhat/enterprise/4/x86_64/src/tcl-8.4.7-2.src.html
+
+
+2. I get the following tcl make test failure on both MacOS X 10.5 and Centos 4.5:
+
+   ==== clock-8.1 clock scan midnight/gmt range bug 413397 FAILED
+   ==== Contents of test case:
+   
+       set fmt "%m/%d"
+       list [clock format [clock scan year -base $5amPST -gmt 0] -format $fmt]  [clock format [clock scan year -base $5amPST -gmt 1] -format $fmt]
+   
+   ---- Result was:
+   01/01 01/01
+   ---- Result should have been (exact matching):
+   12/31 12/31
+   ==== clock-8.1 FAILED
+
+
+3. Unsure if the -nostartflags is unnecessary on MacOS X because of the newer gcc or the
+   Darwin libtool. Newer Linux installations or other Unix flavours may vary.
