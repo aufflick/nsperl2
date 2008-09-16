@@ -164,88 +164,156 @@ void resultObj_to_perl_stack(Tcl_Interp *interp, Tcl_Obj *resultObj)
         PUTBACK;
 }
 
-Tcl_Obj *sv_to_tcl_obj (SV *theSV)
+/* code snarfed from Tcl.pm - I can't believe I spent so much time on the previous version :( */
+/* I have, though, modified the reference and hash handling */
+
+Tcl_Obj *sv_to_tcl_obj (SV *sv)
 {
+    Tcl_Obj *objPtr = NULL;
 
-  /* dereference - TODO: what about a ref to a ref? */
-  if (SvROK(theSV) && SvTYPE(theSV) == SVt_RV)
-    theSV = SvRV(theSV);
+    if (SvGMAGICAL(sv))
+        mg_get(sv);
 
-  switch(SvTYPE(theSV)) {
-    case SVt_IV :
-        return iv_to_tcl_obj (theSV);
+    if (SvROK(sv) && SvTYPE(SvRV(sv)) == SVt_PVAV &&
+        (!SvOBJECT(SvRV(sv)) || sv_isa(sv, "Tcl::List")))
+    {
+        /*
+         * Recurse into ARRAYs, turning them into Tcl list Objs
+         */
+        SV **svp;
+        AV *av    = (AV *) SvRV(sv);
+        I32 avlen = av_len(av);
+        int i;
 
-    case SVt_NV :
-        return nv_to_tcl_obj (theSV);
+        objPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
 
-    case SVt_NULL :
-    case SVt_BIND :
-    case SVt_PV :
-    case SVt_PVIV : /* can this be converted straight as an IV? */
-    case SVt_PVNV : /* can this be converted straight as an NV? */
-        return sv_to_tcl_strobj (theSV);
+        for (i = 0; i <= avlen; i++) {
+            svp = av_fetch(av, i, FALSE);
+            if (svp == NULL) {
+                /* watch for sparse arrays - translate as empty element */
+                /* XXX: Is this handling refcount on NewObj right? */
+                Tcl_ListObjAppendElement(NULL, objPtr, Tcl_NewObj());
+            } else {
+                if ((AV *) SvRV(*svp) == av) {
+                    /* XXX: Is this a proper check for cyclical reference? */
+                    croak("cyclical array reference found");
+                    abort();
+                }
+                Tcl_ListObjAppendElement(NULL, objPtr,
+                                         sv_to_tcl_obj(sv_mortalcopy(*svp)));
+            }
+        }
+    }
+    else if (SvPOK(sv)) {
+        STRLEN length;
+        char *str = SvPV(sv, length);
+        /*
+         * Tcl's "String" object expects utf-8 strings.  If we aren't sure
+         * that we have a utf-8 data, pass it as a Tcl ByteArray (C char*).
+         *
+         * XXX Possible optimization opportunity here.  Tcl will actually
+         * XXX accept and handle most latin-1 char sequences correctly, but
+         * XXX not blocks of truly binary data.  This code is 100% correct,
+         * XXX but could be tweaked to improve performance.
+         */
+        
+        Ns_Log (Notice, "length is: %u", length);
+        Ns_Log (Notice, "str is: %s", str);
 
-    case SVt_PVAV :
-        return av_to_tcl_obj (theSV);
+        if (SvUTF8(sv)) {
 
-    case SVt_PVHV :
-        return hv_to_tcl_obj (theSV);
+            /* skipping - doesn't seem necessary and prevents being binary-clean */
+#ifdef NOT_DEFINED_FOO
+            /*
+             * Tcl allows NULL to be encoded overlong as \300\200 (\xC0\x80).
+             * Tcl itself doesn't require this, but some extensions do when
+             * they pass the string data to native C APIs (like strlen).
+             * Tk is the most notable case for this (calling out to native UI
+             * toolkit APIs that don't take counted strings).
+             */
+            if (memchr(str, '\0', length)) {
+                /* ($sv_copy = $sv) =~ s/\0/\300\200/g */
+                SV *sv_copy = sv_mortalcopy(sv);
+                STRLEN len;
+                char *s = SvPV(sv_copy, len);
+                char *nul;
 
-    case SVt_PVCV :
-    case SVt_PVFM :
-        Ns_Log (Notice,"Code refs not yet supported in return values");
-	return NULL;
+                while ((nul = memchr(s, '\0', len))) {
+                    STRLEN i = nul - SvPVX(sv_copy);
+                    s = SvGROW(sv_copy, SvCUR(sv_copy) + 2);
+                    nul = s + i;
+                    memmove(nul + 2, nul + 1, SvEND(sv_copy) - (nul + 1));
+                    nul[0] = '\300';
+                    nul[1] = '\200';
+                    SvCUR_set(sv_copy, SvCUR(sv_copy) + 1);
+                    s = nul + 2;
+                    len = SvEND(sv_copy) - s;
+                }
+                str = SvPV(sv_copy, length);
+            }
+#endif
+            objPtr = Tcl_NewStringObj("", 0);
+            Tcl_AppendToObj(objPtr, str, length);
+            /*objPtr = Tcl_NewStringObj(str, length);*/
+        } else {
+            objPtr = Tcl_NewByteArrayObj((unsigned char *)str, length);
+        }
+    }
+    else if (SvNOK(sv)) {
+        double dval = SvNV(sv);
+        int ival;
+        /*
+         * Perl does math with doubles by default, so 0 + 1 == 1.0.
+         * Check for int-equiv doubles and make those ints.
+         * XXX This check possibly only necessary for <=5.6.x
+         */
+        if (((double)(ival = SvIV(sv)) == dval)) {
+            objPtr = Tcl_NewIntObj(ival);
+        } else {
+            objPtr = Tcl_NewDoubleObj(dval);
+        }
+    }
+    else if (SvIOK(sv)) {
+        objPtr = Tcl_NewIntObj(SvIV(sv));
+    }
+    else {
+        /*
+         * Catch-all
+         * XXX: nsperl2 modified
+         */
 
-    case SVt_PVGV :
-    case SVt_PVIO :
-        Ns_Log (Notice,"Globs and IO handles not yet supported in return values");
-	return NULL;
+        SV *theSV = sv;
+        if (SvROK(theSV) && SvTYPE(theSV) == SVt_RV)
+            theSV = SvRV(theSV);
 
-    case SVt_PVMG :
-        Ns_Log (Notice,"Blessed or magical scalars not yet supported in return values");
-	return NULL;
+        switch(SvTYPE(theSV)) {
+        case SVt_PVHV :
+            return hv_to_tcl_obj (theSV);
+        case SVt_NULL :
+        case SVt_BIND :
+	    case SVt_PV :
+	    case SVt_PVIV : /* can this be converted straight as an IV? */
+	    case SVt_PVNV : /* can this be converted straight as an NV? */
+            return sv_to_tcl_strobj (theSV);
+        }
 
-    case SVt_PVLV :
-        Ns_Log (Notice,"Not quite sure how an lvalue got here...");
-	return NULL;
-    
-    case SVt_RV : 
-      Ns_Log (Notice, "Not geared yet for a reference to a reference, which is what we seem to have here");
-      return NULL;
+        STRLEN length;
+        char *str = SvPV(sv, length);
+        /*
+         * Tcl's "String" object expects utf-8 strings.  If we aren't sure
+         * that we have a utf-8 data, pass it as a Tcl ByteArray (C char*).
+         */
+        if (SvUTF8(sv)) {
+            /*
+             * Should we consider overlong NULL encoding for Tcl here?
+             */
+            objPtr = Tcl_NewStringObj(str, length);
+        } else {
+            objPtr = Tcl_NewByteArrayObj((unsigned char *) str, length);
+        }
+    }
 
-    case SVt_LAST :
-        Ns_Log (Notice,"I thought SVt_LAST was only a placeholder??");
-	return NULL;
-  }
-
-  Ns_Log (Notice,"No understood type returned by SvTYPE");
-
-  return NULL;
-}
-
-Tcl_Obj *iv_to_tcl_obj (SV *theSV)
-{
-    return Tcl_NewIntObj (SvIV (theSV));
-}
-
-Tcl_Obj *nv_to_tcl_obj (SV *theSV)
-{
-    return Tcl_NewDoubleObj (SvNV (theSV));
-}
-
-Tcl_Obj *av_to_tcl_obj (SV *theSV)
-{
-    Tcl_Obj *res;
-    SV *el;
-    Tcl_Interp *interp = __nsperl2_get_tcl_interp ();
-    int len;
-
-    res = Tcl_NewListObj (0, NULL);
-    len = av_len((AV*)theSV);
-    while(len-- && (el = av_shift ((AV*)theSV)))
-      Tcl_ListObjAppendElement (interp, res, sv_to_tcl_obj (el));
-
-    return res;
+    return objPtr;
 }
 
 /* should offer choice of list of lists instead of flat {key val key val} list */
