@@ -217,9 +217,6 @@ Tcl_Obj *sv_to_tcl_obj (SV *sv)
          * XXX but could be tweaked to improve performance.
          */
         
-        Ns_Log (Notice, "length is: %u", length);
-        Ns_Log (Notice, "str is: %s", str);
-
         if (SvUTF8(sv)) {
 
             /* skipping - doesn't seem necessary and prevents being binary-clean */
