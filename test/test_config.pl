@@ -22,7 +22,7 @@ sub foo_times_hash_list {
         die "this test was expecting to be called in list context - ie no -scalar option passed to perl::call";
     }
 
-    return { the_list => [map {'foo'} 0..$times] };
+    return { the_list => [map {'foo'} 1..$times] };
 }
 
 # use this in a perlish mount
