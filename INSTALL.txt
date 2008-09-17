@@ -27,6 +27,14 @@ For now, here is exactly what I did to install - my tested configurations are li
     sudo mkdir $NSPERLINST
     sudo chown aufflick $NSINST $TCLINST $NSPERLINST # use the appropriate user here
 
+# MacOS X specific
+#
+# You also need to do the following on 10.5 if you use aolserver 4.5.0 (instead of HEAD).
+# I know, it seems to make no sense, but you need to, else you get seg faults.
+# See: http://www.mail-archive.com/aolserver@listserv.aol.com/msg11339.html
+
+  ulimit -n 256
+
 #
 # Install tcl
 #
@@ -112,6 +120,7 @@ Tested Configurations
 O/S                            Tcl     Perl  Aolserver                 gcc
 ------------------------------ ------- ----- ------------------------- -------------------------------
 Mac OS X 10.5 (PPC)            8.4.18  5.10  cvs (HEAD at 2008-03-22)  powerpc-apple-darwin9-gcc-4.0.1
+Mac OS X 10.5 (PPC)            8.4.18  5.10  4.5.0                     powerpc-apple-darwin9-gcc-4.0.1
 CentOS 4.5 (Intel 32 bit SMP)  8.4.18  5.10  4.5.0                     3.4.6 20060404 (Red Hat 3.4.6-9)
 
 
