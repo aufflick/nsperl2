@@ -60,9 +60,11 @@ For now, here is exactly what I did to install - my tested configurations are li
     $TCLINST/bin/tclsh8.4 nsconfig.tcl -install $NSINST
 
 # For MacOS:
+    make
     make install
 
 # For Centos 4.5 (Linux): [Note 3]
+    CFLAGS=-nostartfiles make
     CFLAGS=-nostartfiles make install
 
     cd ..
