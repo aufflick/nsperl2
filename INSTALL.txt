@@ -108,10 +108,15 @@ For now, here is exactly what I did to install - my tested configurations are li
     cd ..
     svn co http://svn.pumptheory.com/repos/trunk/aolserver/nsperl2
     cd nsperl2
+    # see MacOS X note below
     make install
     make test
 
 # note that 'make test' starts an nsd server on port 
+# MacOS X note - with aolserver 4.5.0 you seem to need to do the following due to a bug in the
+# build process:
+
+    cd nsperl2; make; cd ..
 
 
 Tested Configurations
