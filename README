@@ -39,7 +39,7 @@ You can browse the pod of the latest svn trunk versions online.
 Links
 -----
 
-Browse subversion repository: http://svn.pumptheory.com/trac/main/browser/trunk/aolserver/nsperl2
-Svn repository url: http://svn.pumptheory.com/repos/trunk/aolserver/nsperl2
+Github home: http://github.com/aufflick/nsperl2
 
 POD documentation: http://svn.pumptheory.com/cgi-bin/pod2html.cgi?class=Ns
+(NB: currently down - view the source instead)
